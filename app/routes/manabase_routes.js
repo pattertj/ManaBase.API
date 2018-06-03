@@ -9,7 +9,7 @@ module.exports = function (app, db) {
                 return GetGathererData(cards);
             })
             .then(function (gatheredCards) {
-                return CalculateManaBase(gatheredCards);
+                return CalculateManaBase(gatheredCards, req.body.format);
             })
             .then(function (finalResults) {
                 res.json(finalResults);
@@ -60,9 +60,9 @@ module.exports = function (app, db) {
         })
     };
 
-    function CalculateManaBase(decklist) {
+    function CalculateManaBase(decklist, format) {
         return new Promise((resolve, reject) => {
-            var totalLands = 60 - decklist.sum("cardCount");
+
             var manaAnalysis = {
                 whiteSources: 0,
                 blueSources: 0,
@@ -71,50 +71,36 @@ module.exports = function (app, db) {
                 greenSources: 0
             };
 
-            if (totalLands > 27 || totalLands < 20)
-                console.error("Invalid Land Count. Land total must be 20-27. Only 60-card decks are supported currently.");
-            else {
-                // Loop through the cards to determine the max pip count for each color in the deck.
-                decklist.forEach(currentCard => {
+            // Loop through the cards to determine the max pip count for each color in the deck.
+            decklist.forEach(currentCard => {
 
-                    // Calculate how many mana sources are needed of each color for a given card
-                    var wManaSources = manaSourcesNeeded(totalLands, currentCard.cmc, currentCard.W);
-                    var uManaSources = manaSourcesNeeded(totalLands, currentCard.cmc, currentCard.U);
-                    var bManaSources = manaSourcesNeeded(totalLands, currentCard.cmc, currentCard.B);
-                    var rManaSources = manaSourcesNeeded(totalLands, currentCard.cmc, currentCard.R);
-                    var gManaSources = manaSourcesNeeded(totalLands, currentCard.cmc, currentCard.G);
+                console.log(currentCard);
 
-                    // Determine the max mana sources needed for each color after each card
-                    manaAnalysis.whiteSources = Math.max(manaAnalysis.whiteSources, wManaSources);
-                    manaAnalysis.blueSources = Math.max(manaAnalysis.blueSources, uManaSources);
-                    manaAnalysis.blackSources = Math.max(manaAnalysis.blackSources, bManaSources);
-                    manaAnalysis.redSources = Math.max(manaAnalysis.redSources, rManaSources);
-                    manaAnalysis.greenSources = Math.max(manaAnalysis.greenSources, gManaSources);
-                });
-            }
+                // Calculate how many mana sources are needed of each color for a given card
+                var wManaSources = manaSourcesNeeded(currentCard.cmc, currentCard.W, format);
+                var uManaSources = manaSourcesNeeded(currentCard.cmc, currentCard.U, format);
+                var bManaSources = manaSourcesNeeded(currentCard.cmc, currentCard.B, format);
+                var rManaSources = manaSourcesNeeded(currentCard.cmc, currentCard.R, format);
+                var gManaSources = manaSourcesNeeded(currentCard.cmc, currentCard.G, format);
+
+                // Determine the max mana sources needed for each color after each card
+                manaAnalysis.whiteSources = Math.max(manaAnalysis.whiteSources, wManaSources);
+                manaAnalysis.blueSources = Math.max(manaAnalysis.blueSources, uManaSources);
+                manaAnalysis.blackSources = Math.max(manaAnalysis.blackSources, bManaSources);
+                manaAnalysis.redSources = Math.max(manaAnalysis.redSources, rManaSources);
+                manaAnalysis.greenSources = Math.max(manaAnalysis.greenSources, gManaSources);
+            });
 
             resolve(manaAnalysis);
         })
     };
 
-    function manaSourcesNeeded(land, turn, pips) {
+    function manaSourcesNeeded(turn, pips, format) {
         var result = [];
 
-        if (pips === 1) {
-            result = onePipChart.filter(function (entry) {
-                return entry.lands === land && entry.turn === turn;
+            result = manaChart.filter(function (entry) {
+                return entry.format === format && entry.turn === turn && entry.pips === pips;
             }) || [];
-        }
-        if (pips === 2) {
-            result = twoPipChart.filter(function (entry) {
-                return entry.lands === land && entry.turn === turn;
-            }) || [];
-        }
-        if (pips === 3) {
-            result = threePipChart.filter(function (entry) {
-                return entry.lands === land && entry.turn === turn;
-            }) || [];
-        }
 
         if (result.length === 0)
             return 0;
@@ -145,609 +131,330 @@ module.exports = function (app, db) {
         });
     };
 
-    var onePipChart = [{
-            lands: 20,
-            turn: 1,
-            sources: 12
-        }, {
-            lands: 20,
-            turn: 2,
-            sources: 12
-        }, {
-            lands: 20,
-            turn: 3,
-            sources: 11
-        }, {
-            lands: 20,
-            turn: 4,
-            sources: 10
-        }, {
-            lands: 20,
-            turn: 5,
-            sources: 9
-        }, {
-            lands: 20,
-            turn: 6,
-            sources: 9
-        }, {
-            lands: 20,
-            turn: 7,
-            sources: 8
+    var manaChart = [
+        {
+          "format": "Limited",
+          "turn": 1,
+          "pips": 1,
+          "sources": 10
         },
         {
-            lands: 21,
-            turn: 1,
-            sources: 13
-        }, {
-            lands: 21,
-            turn: 2,
-            sources: 12
-        }, {
-            lands: 21,
-            turn: 3,
-            sources: 11
-        }, {
-            lands: 21,
-            turn: 4,
-            sources: 10
-        }, {
-            lands: 21,
-            turn: 5,
-            sources: 10
-        }, {
-            lands: 21,
-            turn: 6,
-            sources: 9
-        }, {
-            lands: 21,
-            turn: 7,
-            sources: 8
+          "format": "Limited",
+          "turn": 2,
+          "pips": 1,
+          "sources": 9
         },
         {
-            lands: 22,
-            turn: 1,
-            sources: 13
-        }, {
-            lands: 22,
-            turn: 2,
-            sources: 12
-        }, {
-            lands: 22,
-            turn: 3,
-            sources: 11
-        }, {
-            lands: 22,
-            turn: 4,
-            sources: 10
-        }, {
-            lands: 22,
-            turn: 5,
-            sources: 10
-        }, {
-            lands: 22,
-            turn: 6,
-            sources: 9
-        }, {
-            lands: 22,
-            turn: 7,
-            sources: 8
+          "format": "Limited",
+          "turn": 3,
+          "pips": 1,
+          "sources": 8
         },
         {
-            lands: 23,
-            turn: 1,
-            sources: 13
-        }, {
-            lands: 23,
-            turn: 2,
-            sources: 12
-        }, {
-            lands: 23,
-            turn: 3,
-            sources: 12
-        }, {
-            lands: 23,
-            turn: 4,
-            sources: 11
-        }, {
-            lands: 23,
-            turn: 5,
-            sources: 10
-        }, {
-            lands: 23,
-            turn: 6,
-            sources: 9
-        }, {
-            lands: 23,
-            turn: 7,
-            sources: 9
+          "format": "Limited",
+          "turn": 4,
+          "pips": 1,
+          "sources": 7
         },
         {
-            lands: 24,
-            turn: 1,
-            sources: 14
-        }, {
-            lands: 24,
-            turn: 2,
-            sources: 13
-        }, {
-            lands: 24,
-            turn: 3,
-            sources: 12
-        }, {
-            lands: 24,
-            turn: 4,
-            sources: 11
-        }, {
-            lands: 24,
-            turn: 5,
-            sources: 10
-        }, {
-            lands: 24,
-            turn: 6,
-            sources: 9
-        }, {
-            lands: 24,
-            turn: 7,
-            sources: 9
+          "format": "Limited",
+          "turn": 5,
+          "pips": 1,
+          "sources": 7
         },
         {
-            lands: 25,
-            turn: 1,
-            sources: 14
-        }, {
-            lands: 25,
-            turn: 2,
-            sources: 13
-        }, {
-            lands: 25,
-            turn: 3,
-            sources: 12
-        }, {
-            lands: 25,
-            turn: 4,
-            sources: 11
-        }, {
-            lands: 25,
-            turn: 5,
-            sources: 10
-        }, {
-            lands: 25,
-            turn: 6,
-            sources: 10
-        }, {
-            lands: 25,
-            turn: 7,
-            sources: 9
+          "format": "Limited",
+          "turn": 6,
+          "pips": 1,
+          "sources": 6
         },
         {
-            lands: 26,
-            turn: 1,
-            sources: 15
-        }, {
-            lands: 26,
-            turn: 2,
-            sources: 13
-        }, {
-            lands: 26,
-            turn: 3,
-            sources: 12
-        }, {
-            lands: 26,
-            turn: 4,
-            sources: 11
-        }, {
-            lands: 26,
-            turn: 5,
-            sources: 10
-        }, {
-            lands: 26,
-            turn: 6,
-            sources: 10
-        }, {
-            lands: 26,
-            turn: 7,
-            sources: 9
+          "format": "Limited",
+          "turn": 7,
+          "pips": 1,
+          "sources": 6
         },
         {
-            lands: 27,
-            turn: 1,
-            sources: 15
-        }, {
-            lands: 27,
-            turn: 2,
-            sources: 14
-        }, {
-            lands: 27,
-            turn: 3,
-            sources: 12
-        }, {
-            lands: 27,
-            turn: 4,
-            sources: 11
-        }, {
-            lands: 27,
-            turn: 5,
-            sources: 10
-        }, {
-            lands: 27,
-            turn: 6,
-            sources: 10
-        }, {
-            lands: 27,
-            turn: 7,
-            sources: 9
+          "format": "Standard",
+          "turn": 1,
+          "pips": 1,
+          "sources": 14
+        },
+        {
+          "format": "Standard",
+          "turn": 2,
+          "pips": 1,
+          "sources": 13
+        },
+        {
+          "format": "Standard",
+          "turn": 3,
+          "pips": 1,
+          "sources": 12
+        },
+        {
+          "format": "Standard",
+          "turn": 4,
+          "pips": 1,
+          "sources": 11
+        },
+        {
+          "format": "Standard",
+          "turn": 5,
+          "pips": 1,
+          "sources": 10
+        },
+        {
+          "format": "Standard",
+          "turn": 6,
+          "pips": 1,
+          "sources": 9
+        },
+        {
+          "format": "Standard",
+          "turn": 7,
+          "pips": 1,
+          "sources": 9
+        },
+        {
+          "format": "Commander",
+          "turn": 1,
+          "pips": 1,
+          "sources": 23
+        },
+        {
+          "format": "Commander",
+          "turn": 2,
+          "pips": 1,
+          "sources": 21
+        },
+        {
+          "format": "Commander",
+          "turn": 3,
+          "pips": 1,
+          "sources": 20
+        },
+        {
+          "format": "Commander",
+          "turn": 4,
+          "pips": 1,
+          "sources": 18
+        },
+        {
+          "format": "Commander",
+          "turn": 5,
+          "pips": 1,
+          "sources": 17
+        },
+        {
+          "format": "Commander",
+          "turn": 6,
+          "pips": 1,
+          "sources": 16
+        },
+        {
+          "format": "Commander",
+          "turn": 7,
+          "pips": 1,
+          "sources": 15
+        },
+        {
+          "format": "Limited",
+          "turn": 2,
+          "pips": 2,
+          "sources": 14
+        },
+        {
+          "format": "Limited",
+          "turn": 3,
+          "pips": 2,
+          "sources": 13
+        },
+        {
+          "format": "Limited",
+          "turn": 4,
+          "pips": 2,
+          "sources": 12
+        },
+        {
+          "format": "Limited",
+          "turn": 5,
+          "pips": 2,
+          "sources": 11
+        },
+        {
+          "format": "Limited",
+          "turn": 6,
+          "pips": 2,
+          "sources": 10
+        },
+        {
+          "format": "Limited",
+          "turn": 7,
+          "pips": 2,
+          "sources": 10
+        },
+        {
+          "format": "Standard",
+          "turn": 2,
+          "pips": 2,
+          "sources": 20
+        },
+        {
+          "format": "Standard",
+          "turn": 3,
+          "pips": 2,
+          "sources": 19
+        },
+        {
+          "format": "Standard",
+          "turn": 4,
+          "pips": 2,
+          "sources": 18
+        },
+        {
+          "format": "Standard",
+          "turn": 5,
+          "pips": 2,
+          "sources": 16
+        },
+        {
+          "format": "Standard",
+          "turn": 6,
+          "pips": 2,
+          "sources": 15
+        },
+        {
+          "format": "Standard",
+          "turn": 7,
+          "pips": 2,
+          "sources": 14
+        },
+        {
+          "format": "Commander",
+          "turn": 2,
+          "pips": 2,
+          "sources": 33
+        },
+        {
+          "format": "Commander",
+          "turn": 3,
+          "pips": 2,
+          "sources": 31
+        },
+        {
+          "format": "Commander",
+          "turn": 4,
+          "pips": 2,
+          "sources": 29
+        },
+        {
+          "format": "Commander",
+          "turn": 5,
+          "pips": 2,
+          "sources": 27
+        },
+        {
+          "format": "Commander",
+          "turn": 6,
+          "pips": 2,
+          "sources": 26
+        },
+        {
+          "format": "Commander",
+          "turn": 7,
+          "pips": 2,
+          "sources": 24
+        },
+        {
+          "format": "Limited",
+          "turn": 3,
+          "pips": 3,
+          "sources": 16
+        },
+        {
+          "format": "Limited",
+          "turn": 4,
+          "pips": 3,
+          "sources": 15
+        },
+        {
+          "format": "Limited",
+          "turn": 5,
+          "pips": 3,
+          "sources": 14
+        },
+        {
+          "format": "Limited",
+          "turn": 6,
+          "pips": 3,
+          "sources": 14
+        },
+        {
+          "format": "Limited",
+          "turn": 7,
+          "pips": 3,
+          "sources": 13
+        },
+        {
+          "format": "Standard",
+          "turn": 3,
+          "pips": 3,
+          "sources": 22
+        },
+        {
+          "format": "Standard",
+          "turn": 4,
+          "pips": 3,
+          "sources": 22
+        },
+        {
+          "format": "Standard",
+          "turn": 5,
+          "pips": 3,
+          "sources": 21
+        },
+        {
+          "format": "Standard",
+          "turn": 6,
+          "pips": 3,
+          "sources": 20
+        },
+        {
+          "format": "Standard",
+          "turn": 7,
+          "pips": 3,
+          "sources": 19
+        },
+        {
+          "format": "Commander",
+          "turn": 3,
+          "pips": 3,
+          "sources": 37
+        },
+        {
+          "format": "Commander",
+          "turn": 4,
+          "pips": 3,
+          "sources": 36
+        },
+        {
+          "format": "Commander",
+          "turn": 5,
+          "pips": 3,
+          "sources": 34
+        },
+        {
+          "format": "Commander",
+          "turn": 6,
+          "pips": 3,
+          "sources": 33
+        },
+        {
+          "format": "Commander",
+          "turn": 7,
+          "pips": 3,
+          "sources": 32
         }
-    ];
-
-    var twoPipChart = [{
-            lands: 20,
-            turn: 2,
-            sources: 18
-        }, {
-            lands: 20,
-            turn: 3,
-            sources: 17
-        }, {
-            lands: 20,
-            turn: 4,
-            sources: 16
-        }, {
-            lands: 20,
-            turn: 5,
-            sources: 15
-        }, {
-            lands: 20,
-            turn: 6,
-            sources: 14
-        }, {
-            lands: 20,
-            turn: 7,
-            sources: 14
-        },
-        {
-            lands: 21,
-            turn: 2,
-            sources: 18
-        }, {
-            lands: 21,
-            turn: 3,
-            sources: 17
-        }, {
-            lands: 21,
-            turn: 4,
-            sources: 16
-        }, {
-            lands: 21,
-            turn: 5,
-            sources: 16
-        }, {
-            lands: 21,
-            turn: 6,
-            sources: 15
-        }, {
-            lands: 21,
-            turn: 7,
-            sources: 14
-        },
-        {
-            lands: 22,
-            turn: 2,
-            sources: 19
-        }, {
-            lands: 22,
-            turn: 3,
-            sources: 18
-        }, {
-            lands: 22,
-            turn: 4,
-            sources: 17
-        }, {
-            lands: 22,
-            turn: 5,
-            sources: 16
-        }, {
-            lands: 22,
-            turn: 6,
-            sources: 15
-        }, {
-            lands: 22,
-            turn: 7,
-            sources: 14
-        },
-        {
-            lands: 23,
-            turn: 2,
-            sources: 20
-        }, {
-            lands: 23,
-            turn: 3,
-            sources: 18
-        }, {
-            lands: 23,
-            turn: 4,
-            sources: 17
-        }, {
-            lands: 23,
-            turn: 5,
-            sources: 16
-        }, {
-            lands: 23,
-            turn: 6,
-            sources: 15
-        }, {
-            lands: 23,
-            turn: 7,
-            sources: 14
-        },
-        {
-            lands: 24,
-            turn: 2,
-            sources: 20
-        }, {
-            lands: 24,
-            turn: 3,
-            sources: 19
-        }, {
-            lands: 24,
-            turn: 4,
-            sources: 18
-        }, {
-            lands: 24,
-            turn: 5,
-            sources: 16
-        }, {
-            lands: 24,
-            turn: 6,
-            sources: 15
-        }, {
-            lands: 24,
-            turn: 7,
-            sources: 14
-        },
-        {
-            lands: 25,
-            turn: 2,
-            sources: 21
-        }, {
-            lands: 25,
-            turn: 3,
-            sources: 19
-        }, {
-            lands: 25,
-            turn: 4,
-            sources: 18
-        }, {
-            lands: 25,
-            turn: 5,
-            sources: 17
-        }, {
-            lands: 25,
-            turn: 6,
-            sources: 16
-        }, {
-            lands: 25,
-            turn: 7,
-            sources: 15
-        },
-        {
-            lands: 26,
-            turn: 2,
-            sources: 21
-        }, {
-            lands: 26,
-            turn: 3,
-            sources: 20
-        }, {
-            lands: 26,
-            turn: 4,
-            sources: 18
-        }, {
-            lands: 26,
-            turn: 5,
-            sources: 17
-        }, {
-            lands: 26,
-            turn: 6,
-            sources: 16
-        }, {
-            lands: 26,
-            turn: 7,
-            sources: 15
-        },
-        {
-            lands: 27,
-            turn: 2,
-            sources: 22
-        }, {
-            lands: 27,
-            turn: 3,
-            sources: 20
-        }, {
-            lands: 27,
-            turn: 4,
-            sources: 18
-        }, {
-            lands: 27,
-            turn: 5,
-            sources: 17
-        }, {
-            lands: 27,
-            turn: 6,
-            sources: 16
-        }, {
-            lands: 27,
-            turn: 7,
-            sources: 15
-        }
-    ];
-
-    var threePipChart = [{
-            lands: 20,
-            turn: 3,
-            sources: 19
-        }, {
-            lands: 20,
-            turn: 4,
-            sources: 19
-        }, {
-            lands: 20,
-            turn: 5,
-            sources: 18
-        }, {
-            lands: 20,
-            turn: 6,
-            sources: 18
-        }, {
-            lands: 20,
-            turn: 7,
-            sources: 17
-        },
-        {
-            lands: 21,
-            turn: 3,
-            sources: 20
-        }, {
-            lands: 21,
-            turn: 4,
-            sources: 20
-        }, {
-            lands: 21,
-            turn: 5,
-            sources: 19
-        }, {
-            lands: 21,
-            turn: 6,
-            sources: 18
-        }, {
-            lands: 21,
-            turn: 7,
-            sources: 18
-        },
-        {
-            lands: 22,
-            turn: 3,
-            sources: 21
-        }, {
-            lands: 22,
-            turn: 4,
-            sources: 20
-        }, {
-            lands: 22,
-            turn: 5,
-            sources: 20
-        }, {
-            lands: 22,
-            turn: 6,
-            sources: 19
-        }, {
-            lands: 22,
-            turn: 7,
-            sources: 18
-        },
-        {
-            lands: 23,
-            turn: 3,
-            sources: 22
-        }, {
-            lands: 23,
-            turn: 4,
-            sources: 21
-        }, {
-            lands: 23,
-            turn: 5,
-            sources: 20
-        }, {
-            lands: 23,
-            turn: 6,
-            sources: 20
-        }, {
-            lands: 23,
-            turn: 7,
-            sources: 19
-        },
-        {
-            lands: 24,
-            turn: 3,
-            sources: 22
-        }, {
-            lands: 24,
-            turn: 4,
-            sources: 22
-        }, {
-            lands: 24,
-            turn: 5,
-            sources: 21
-        }, {
-            lands: 24,
-            turn: 6,
-            sources: 20
-        }, {
-            lands: 24,
-            turn: 7,
-            sources: 19
-        },
-        {
-            lands: 25,
-            turn: 3,
-            sources: 23
-        }, {
-            lands: 25,
-            turn: 4,
-            sources: 22
-        }, {
-            lands: 25,
-            turn: 5,
-            sources: 21
-        }, {
-            lands: 25,
-            turn: 6,
-            sources: 20
-        }, {
-            lands: 25,
-            turn: 7,
-            sources: 19
-        },
-        {
-            lands: 26,
-            turn: 3,
-            sources: 23
-        }, {
-            lands: 26,
-            turn: 4,
-            sources: 22
-        }, {
-            lands: 26,
-            turn: 5,
-            sources: 21
-        }, {
-            lands: 26,
-            turn: 6,
-            sources: 20
-        }, {
-            lands: 26,
-            turn: 7,
-            sources: 20
-        },
-        {
-            lands: 27,
-            turn: 3,
-            sources: 24
-        }, {
-            lands: 27,
-            turn: 4,
-            sources: 23
-        }, {
-            lands: 27,
-            turn: 5,
-            sources: 22
-        }, {
-            lands: 27,
-            turn: 6,
-            sources: 21
-        }, {
-            lands: 27,
-            turn: 7,
-            sources: 20
-        }
-    ];
+       ];
 };
