@@ -1,0 +1,22 @@
+{
+  "name": "manabase.api",
+  "version": "1.0.0",
+  "description": "An API for building Magic the Gathering mana bases",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js"
+  },
+  "author": "Tyler Patterson",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "express": "^4.16.3",
+    "request": "^2.87.0"
+  },
+  "engines": {
+    "node": "8.9.4"
+  },
+  "devDependencies": {
+    "nodemon": "^1.17.5"
+  }
+}
