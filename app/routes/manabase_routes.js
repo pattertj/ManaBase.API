@@ -1,7 +1,7 @@
 var request = require('request');
 
 module.exports = function (app, db) {
-    app.post('/api/manabase', (req, res) => {
+    app.post('/api/manabase/text', (req, res) => {
         var decklist = req.body.decklist + '';
 
         SplitPool(decklist)
@@ -18,6 +18,17 @@ module.exports = function (app, db) {
                 console.error(err);
             });
     });
+
+    app.post('/api/manabase/array', (req, res) => {
+      
+      CalculateManaBase(req.body.decklist, req.body.format)
+          .then(function (finalResults) {
+              res.json(finalResults);
+          })
+          .catch(function (err) {
+              console.error(err);
+          });
+  });
 
     function SplitPool(poolText) {
         return new Promise((resolve, reject) => {
@@ -73,8 +84,6 @@ module.exports = function (app, db) {
 
             // Loop through the cards to determine the max pip count for each color in the deck.
             decklist.forEach(currentCard => {
-
-                console.log(currentCard);
 
                 // Calculate how many mana sources are needed of each color for a given card
                 var wManaSources = manaSourcesNeeded(currentCard.cmc, currentCard.W, format);
