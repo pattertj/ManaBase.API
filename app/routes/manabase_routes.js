@@ -1,11 +1,16 @@
 var request = require('request');
 
 module.exports = function (app, db) {
-  app.post('/api/manabase/card', (req, res) => {
-    
-    console.log(req.body.card);
+  app.post('/api/manabase/card/name', (req, res) => {
 
-    CalculateManaBase([req.body.card], req.body.format)
+    var newCard = {
+      cardName: req.body.CardName
+    };
+
+    GetGathererData([newCard])
+      .then(function (gatheredCards) {
+        return CalculateManaBase(gatheredCards, req.body.format);
+      })
       .then(function (finalResults) {
         res.json(finalResults);
       })
@@ -81,6 +86,7 @@ module.exports = function (app, db) {
       Promise.all(cardGathererPromises)
         .then(function (results) {
           results.forEach(card => {
+            console.log(card);
             card.W = (card.manaCost.match(/W/g) || []).length;
             card.U = (card.manaCost.match(/U/g) || []).length;
             card.B = (card.manaCost.match(/B/g) || []).length;
@@ -156,7 +162,9 @@ module.exports = function (app, db) {
       };
 
       request(options, function (error, response, body) {
-        body.cardCount = card.cardCount;
+        if (card.cardCount != undefined) {
+          body.cardCount = card.cardCount;
+        }
         resolve(body);
       });
     });
