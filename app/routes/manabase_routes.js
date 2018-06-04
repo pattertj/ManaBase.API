@@ -1,7 +1,20 @@
 var request = require('request');
 
 module.exports = function (app, db) {
-  app.post('/api/manabase/text', (req, res) => {
+  app.post('/api/manabase/card', (req, res) => {
+    
+    console.log(req.body.card);
+
+    CalculateManaBase([req.body.card], req.body.format)
+      .then(function (finalResults) {
+        res.json(finalResults);
+      })
+      .catch(function (err) {
+        console.error(err);
+      });
+  });
+
+  app.post('/api/manabase/pool/text', (req, res) => {
     var decklist = req.body.decklist + '';
 
     SplitPool(decklist)
@@ -19,7 +32,7 @@ module.exports = function (app, db) {
       });
   });
 
-  app.post('/api/manabase/array', (req, res) => {
+  app.post('/api/manabase/pool/array', (req, res) => {
 
     CalculateManaBase(req.body.decklist, req.body.format)
       .then(function (finalResults) {
